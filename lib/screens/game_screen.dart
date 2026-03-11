@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import '../game/hex_cascade_game.dart';
+import '../game/hex_game.dart';
 import '../models/game_state.dart';
 import '../services/save_service.dart';
 import 'game_over_screen.dart';
@@ -29,11 +29,12 @@ class _GameScreenState extends State<GameScreen> {
     _game = HexCascadeGame(
       state: widget.state,
       onScoreChanged: (s, l) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _score = s;
             _level = l;
           });
+        }
       },
       onGameOver: (finalScore) {
         if (mounted) {
