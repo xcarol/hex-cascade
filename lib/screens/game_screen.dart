@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import '../game/hex_game.dart';
@@ -19,12 +21,14 @@ class _GameScreenState extends State<GameScreen> {
   int _score = 0;
   int _level = 1;
   bool _paused = false;
+  int _currentPieceValue = 0;
 
   @override
   void initState() {
     super.initState();
     _score = widget.state.score;
     _level = widget.state.level;
+    _currentPieceValue = widget.state.currentPieceValue ?? 0;
 
     _game = HexCascadeGame(
       state: widget.state,
@@ -45,6 +49,10 @@ class _GameScreenState extends State<GameScreen> {
             ),
           );
         }
+      },
+      onPieceChanged: (value) {
+        // ← nou
+        if (mounted) setState(() => _currentPieceValue = value);
       },
     );
   }
@@ -137,6 +145,8 @@ class _GameScreenState extends State<GameScreen> {
                 ],
               ),
             ),
+            _CurrentPieceWidget(value: _currentPieceValue),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -235,4 +245,81 @@ class _HUD extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CurrentPieceWidget extends StatelessWidget {
+  final int value;
+  const _CurrentPieceWidget({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          const Text(
+            'FITXA ACTUAL',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 10,
+              letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          CustomPaint(
+            size: const Size(72, 72),
+            painter: _HexPainter(value: value),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HexPainter extends CustomPainter {
+  final int value;
+  const _HexPainter({required this.value});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2 * 0.9;
+
+    final fillPaint = Paint()..color = const Color(0xFF4A7A9B);
+    final borderPaint = Paint()
+      ..color = Colors.white24
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = (3.14159 / 3) * i - 3.14159 / 6;
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    path.close();
+
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(path, borderPaint);
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '$value',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(
+      canvas,
+      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_HexPainter old) => old.value != value;
 }

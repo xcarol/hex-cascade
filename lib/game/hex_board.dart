@@ -6,6 +6,10 @@ import 'hex_game.dart';
 
 /// Manages the hex grid: layout, tile generation, and board mutations.
 class HexBoard extends Component {
+  final void Function(int row, int col)? onCellTapped;
+
+  HexBoard({this.onCellTapped});
+
   final List<List<HexCell?>> _components = List.generate(
     GameState.rows,
     (_) => List.filled(GameState.cols, null),
@@ -29,21 +33,17 @@ class HexBoard extends Component {
         GameState.cols * HexCell.hexSize * sqrt(3) +
         HexCell.hexSize * sqrt(3) / 2;
     final totalH =
-        GameState.rows * HexCell.hexSize * 1.5 +
-        HexCell.hexSize * 0.5;
+        GameState.rows * HexCell.hexSize * 1.5 + HexCell.hexSize * 0.5;
 
     gridOffset = Vector2((vw - totalW) / 2, (vh - totalH) / 2 + 30);
   }
 
-  void populateFromState(
-    List<List<GameState?>> board,
-    List<List<HexTile?>> stateTiles,
-  ) {
+  void populateFromState(List<List<HexTile?>> stateTiles) {
     _clearComponents();
     for (int r = 0; r < GameState.rows; r++) {
       for (int c = 0; c < GameState.cols; c++) {
         final tile = stateTiles[r][c];
-        if (tile != null) _addTile(r, c, tile.color);
+        _addTile(r, c, value: tile?.value, color: tile?.color);
       }
     }
   }
@@ -52,8 +52,7 @@ class HexBoard extends Component {
     _clearComponents();
     for (int r = 0; r < GameState.rows; r++) {
       for (int c = 0; c < GameState.cols; c++) {
-        final color = TileColor.values[0];
-        _addTile(r, c, color);
+        _addTile(r, c);
       }
     }
   }
@@ -67,9 +66,16 @@ class HexBoard extends Component {
     }
   }
 
-  void _addTile(int r, int c, TileColor color) {
+  void _addTile(int r, int c, {int? value, TileColor? color}) {
     final pos = HexCell.positionFor(r, c, offset: gridOffset);
-    final comp = HexCell(row: r, col: c, color: color, pos: pos);
+    final comp = HexCell(
+      row: r,
+      col: c,
+      value: value,
+      color: color,
+      pos: pos,
+      onTapped: onCellTapped,
+    );
     _components[r][c] = comp;
     add(comp);
   }

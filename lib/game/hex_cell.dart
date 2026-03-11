@@ -5,11 +5,16 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 
 class HexCell extends PositionComponent with TapCallbacks {
+  final void Function(int row, int col)? onTapped;
+
   final int row;
   final int col;
-  TileColor color;
+  int? value;
+  TileColor? color;
 
-  static const double hexSize = 36.0; // circumradius
+  static const double hexSize = 36.0;
+  static const Color _emptyColor = Color(0xFF1A2A3A);
+  static const Color _filledColor = Color(0xFF4A7A9B);
 
   double _scale = 1.0;
   bool _animating = false;
@@ -18,13 +23,27 @@ class HexCell extends PositionComponent with TapCallbacks {
   HexCell({
     required this.row,
     required this.col,
-    required this.color,
+    this.value,
+    this.color,
     required Vector2 pos,
+    this.onTapped,
   }) : super(
          position: pos,
          size: Vector2.all(hexSize * 2),
          anchor: Anchor.center,
        );
+
+  bool get isEmpty => value == null && color == null;
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (isEmpty) onTapped?.call(row, col);
+  }
+
+  void playAnimation() {
+    _animating = true;
+    _animTimer = 0;
+  }
 
   @override
   void update(double dt) {
@@ -45,16 +64,42 @@ class HexCell extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = Colors.black;
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
     final center = Offset(size.x / 2, size.y / 2);
-    final path = _hexPath(center, HexCell.hexSize * _scale * 0.9);
+    final r = hexSize * _scale * 0.9;
 
-    canvas.drawPath(path, paint);
-    canvas.drawPath(path, highlightPaint);
+    // Fons
+    final fillPaint = Paint()..color = isEmpty ? _emptyColor : _filledColor;
+    final borderPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.15)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final path = _hexPath(center, r);
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(path, borderPaint);
+
+    // Valor
+    if (!isEmpty) {
+      final text = value?.toString() ?? '';
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(
+        canvas,
+        Offset(
+          center.dx - textPainter.width / 2,
+          center.dy - textPainter.height / 2,
+        ),
+      );
+    }
   }
 
   Path _hexPath(Offset center, double r) {
@@ -63,18 +108,14 @@ class HexCell extends PositionComponent with TapCallbacks {
       final angle = (pi / 3) * i - pi / 6;
       final x = center.dx + r * cos(angle);
       final y = center.dy + r * sin(angle);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
     }
     path.close();
     return path;
   }
 
   static Vector2 positionFor(int row, int col, {Vector2? offset}) {
-    const w = hexSize * 1.73205080757; // sqrt(3)
+    const w = hexSize * 1.73205080757;
     const h = hexSize * 2;
     final x = col * w + (row % 2 == 1 ? w / 2 : 0);
     final y = row * h * 0.75;

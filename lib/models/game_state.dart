@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 /// Colours available for hex tiles.
 enum TileColor { red, blue, green, yellow, purple, cyan }
@@ -7,29 +8,35 @@ enum TileColor { red, blue, green, yellow, purple, cyan }
 class HexTile {
   final int row;
   final int col;
-  TileColor color;
-  bool isEmpty;
+  final int? value;
+  final TileColor? color;
+  final bool isEmpty;
 
   HexTile({
     required this.row,
     required this.col,
-    required this.color,
+    this.value,
+    this.color,
     this.isEmpty = false,
   });
 
   Map<String, dynamic> toJson() => {
-        'row': row,
-        'col': col,
-        'color': color.index,
-        'isEmpty': isEmpty,
-      };
+    'row': row,
+    'col': col,
+    'value': value,
+    'color': color?.index,
+    'isEmpty': isEmpty,
+  };
 
   factory HexTile.fromJson(Map<String, dynamic> json) => HexTile(
-        row: json['row'] as int,
-        col: json['col'] as int,
-        color: TileColor.values[json['color'] as int],
-        isEmpty: json['isEmpty'] as bool,
-      );
+    row: json['row'] as int,
+    col: json['col'] as int,
+    value: json['value'] as int?,
+    color: json['color'] != null
+        ? TileColor.values[json['color'] as int]
+        : null,
+    isEmpty: json['isEmpty'] as bool,
+  );
 }
 
 /// Full serialisable state of an in-progress game.
@@ -38,6 +45,7 @@ class GameState {
   int level;
   int movesInLevel;
   List<List<HexTile?>> board;
+  int? currentPieceValue;
 
   static const int rows = 7;
   static const int cols = 7;
@@ -47,12 +55,12 @@ class GameState {
     this.level = 1,
     this.movesInLevel = 0,
     List<List<HexTile?>>? board,
-  }) : board = board ?? _emptyBoard();
+  }) : board = board ?? _emptyBoard(){
+    generateNextPiece();
+  }
 
-  static List<List<HexTile?>> _emptyBoard() => List.generate(
-        rows,
-        (r) => List.generate(cols, (c) => null),
-      );
+  static List<List<HexTile?>> _emptyBoard() =>
+      List.generate(rows, (r) => List.generate(cols, (c) => null));
 
   String toJson() {
     final tiles = <Map<String, dynamic>>[];
@@ -81,5 +89,10 @@ class GameState {
       state.board[tile.row][tile.col] = tile;
     }
     return state;
+  }
+
+  void generateNextPiece() {
+    final random = Random();
+    currentPieceValue = random.nextInt(5) + 1; // valors entre 1 i 5
   }
 }
