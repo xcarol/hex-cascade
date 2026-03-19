@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import '../game/hex_cascade_game.dart';
+import 'package:hex_cascade/models/piece_generator.dart';
+import '../game/hex_game.dart';
 import '../models/game_state.dart';
 import '../services/save_service.dart';
 import 'game_over_screen.dart';
@@ -19,21 +22,24 @@ class _GameScreenState extends State<GameScreen> {
   int _score = 0;
   int _level = 1;
   bool _paused = false;
+  Piece? _currentPiece;
 
   @override
   void initState() {
     super.initState();
     _score = widget.state.score;
     _level = widget.state.level;
+    _currentPiece = widget.state.currentPiece;
 
     _game = HexCascadeGame(
       state: widget.state,
       onScoreChanged: (s, l) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _score = s;
             _level = l;
           });
+        }
       },
       onGameOver: (finalScore) {
         if (mounted) {
@@ -44,6 +50,9 @@ class _GameScreenState extends State<GameScreen> {
             ),
           );
         }
+      },
+      onPieceChanged: (piece) {
+        if (mounted) setState(() => _currentPiece = piece);
       },
     );
   }
@@ -136,6 +145,8 @@ class _GameScreenState extends State<GameScreen> {
                 ],
               ),
             ),
+            _CurrentPieceWidget(piece: _currentPiece),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -234,4 +245,95 @@ class _HUD extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CurrentPieceWidget extends StatelessWidget {
+  final Piece? piece;
+  const _CurrentPieceWidget({required this.piece});
+
+  @override
+  Widget build(BuildContext context) {
+    if (piece == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          Text(
+            piece!.isSpecial ? 'FITXA ESPECIAL' : 'FITXA ACTUAL',
+            style: TextStyle(
+              color: piece!.isSpecial
+                  ? const Color(0xFF64FFDA)
+                  : Colors.white38,
+              fontSize: 10,
+              letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          CustomPaint(
+            size: const Size(72, 72),
+            painter: _HexPainter(piece: piece!),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HexPainter extends CustomPainter {
+  final Piece piece;
+  const _HexPainter({required this.piece});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2 * 0.9;
+
+    final fillPaint = Paint()
+      ..color = piece.isSpecial
+          ? const Color(0xFF1A5C4A)  // verd fosc per especials
+          : const Color(0xFF4A7A9B); // blau per normals
+    final borderPaint = Paint()
+      ..color = piece.isSpecial
+          ? const Color(0xFF64FFDA)  // vora verda brillant per especials
+          : Colors.white24
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = piece.isSpecial ? 3 : 2;
+
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = (pi / 3) * i - pi / 6;
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    path.close();
+
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(path, borderPaint);
+
+    final label = piece.isSpecial
+        ? '+${piece.value}'
+        : '${piece.value}';
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: piece.isSpecial
+              ? const Color(0xFF64FFDA)
+              : Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(
+      center.dx - tp.width / 2,
+      center.dy - tp.height / 2,
+    ));
+  }
+
+  @override
+  bool shouldRepaint(_HexPainter old) => old.piece != piece;
 }
