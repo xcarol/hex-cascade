@@ -38,6 +38,14 @@ class HexBoard extends Component {
     gridOffset = Vector2((vw - totalW) / 2, (vh - totalH) / 2 + 30);
   }
 
+  void setSpecialMode(bool isSpecial) {
+    for (final row in _components) {
+      for (final cell in row) {
+        cell?.isSpecialMode = isSpecial;
+      }
+    }
+  }
+
   void populateFromState(List<List<HexTile?>> stateTiles) {
     _clearComponents();
     for (int r = 0; r < GameState.rows; r++) {

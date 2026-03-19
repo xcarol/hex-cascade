@@ -11,6 +11,7 @@ class HexCell extends PositionComponent with TapCallbacks {
   final int col;
   int? value;
   TileColor? color;
+  bool isSpecialMode = false;
 
   static const double hexSize = 36.0;
   static const Color _emptyColor = Color(0xFF1A2A3A);
@@ -37,7 +38,8 @@ class HexCell extends PositionComponent with TapCallbacks {
 
   @override
   void onTapDown(TapDownEvent event) {
-    if (isEmpty) onTapped?.call(row, col);
+    if (isSpecialMode && !isEmpty) onTapped?.call(row, col);
+    if (!isSpecialMode && isEmpty) onTapped?.call(row, col);
   }
 
   void playAnimation() {

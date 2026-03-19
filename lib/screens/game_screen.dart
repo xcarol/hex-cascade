@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
+import 'package:hex_cascade/models/piece_generator.dart';
 import '../game/hex_game.dart';
 import '../models/game_state.dart';
 import '../services/save_service.dart';
@@ -21,14 +22,14 @@ class _GameScreenState extends State<GameScreen> {
   int _score = 0;
   int _level = 1;
   bool _paused = false;
-  int _currentPieceValue = 0;
+  Piece? _currentPiece;
 
   @override
   void initState() {
     super.initState();
     _score = widget.state.score;
     _level = widget.state.level;
-    _currentPieceValue = widget.state.currentPieceValue ?? 0;
+    _currentPiece = widget.state.currentPiece;
 
     _game = HexCascadeGame(
       state: widget.state,
@@ -50,9 +51,8 @@ class _GameScreenState extends State<GameScreen> {
           );
         }
       },
-      onPieceChanged: (value) {
-        // ← nou
-        if (mounted) setState(() => _currentPieceValue = value);
+      onPieceChanged: (piece) {
+        if (mounted) setState(() => _currentPiece = piece);
       },
     );
   }
@@ -145,7 +145,7 @@ class _GameScreenState extends State<GameScreen> {
                 ],
               ),
             ),
-            _CurrentPieceWidget(value: _currentPieceValue),
+            _CurrentPieceWidget(piece: _currentPiece),
             const SizedBox(height: 16),
           ],
         ),
@@ -248,19 +248,22 @@ class _HUD extends StatelessWidget {
 }
 
 class _CurrentPieceWidget extends StatelessWidget {
-  final int value;
-  const _CurrentPieceWidget({required this.value});
+  final Piece? piece;
+  const _CurrentPieceWidget({required this.piece});
 
   @override
   Widget build(BuildContext context) {
+    if (piece == null) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
-          const Text(
-            'FITXA ACTUAL',
+          Text(
+            piece!.isSpecial ? 'FITXA ESPECIAL' : 'FITXA ACTUAL',
             style: TextStyle(
-              color: Colors.white38,
+              color: piece!.isSpecial
+                  ? const Color(0xFF64FFDA)
+                  : Colors.white38,
               fontSize: 10,
               letterSpacing: 3,
             ),
@@ -268,7 +271,7 @@ class _CurrentPieceWidget extends StatelessWidget {
           const SizedBox(height: 8),
           CustomPaint(
             size: const Size(72, 72),
-            painter: _HexPainter(value: value),
+            painter: _HexPainter(piece: piece!),
           ),
         ],
       ),
@@ -277,23 +280,28 @@ class _CurrentPieceWidget extends StatelessWidget {
 }
 
 class _HexPainter extends CustomPainter {
-  final int value;
-  const _HexPainter({required this.value});
+  final Piece piece;
+  const _HexPainter({required this.piece});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final r = size.width / 2 * 0.9;
 
-    final fillPaint = Paint()..color = const Color(0xFF4A7A9B);
+    final fillPaint = Paint()
+      ..color = piece.isSpecial
+          ? const Color(0xFF1A5C4A)  // verd fosc per especials
+          : const Color(0xFF4A7A9B); // blau per normals
     final borderPaint = Paint()
-      ..color = Colors.white24
+      ..color = piece.isSpecial
+          ? const Color(0xFF64FFDA)  // vora verda brillant per especials
+          : Colors.white24
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = piece.isSpecial ? 3 : 2;
 
     final path = Path();
     for (int i = 0; i < 6; i++) {
-      final angle = (3.14159 / 3) * i - 3.14159 / 6;
+      final angle = (pi / 3) * i - pi / 6;
       final x = center.dx + r * cos(angle);
       final y = center.dy + r * sin(angle);
       i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
@@ -303,23 +311,29 @@ class _HexPainter extends CustomPainter {
     canvas.drawPath(path, fillPaint);
     canvas.drawPath(path, borderPaint);
 
+    final label = piece.isSpecial
+        ? '+${piece.value}'
+        : '${piece.value}';
+
     final tp = TextPainter(
       text: TextSpan(
-        text: '$value',
-        style: const TextStyle(
-          color: Colors.white,
+        text: label,
+        style: TextStyle(
+          color: piece.isSpecial
+              ? const Color(0xFF64FFDA)
+              : Colors.white,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(
-      canvas,
-      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
-    );
+    tp.paint(canvas, Offset(
+      center.dx - tp.width / 2,
+      center.dy - tp.height / 2,
+    ));
   }
 
   @override
-  bool shouldRepaint(_HexPainter old) => old.value != value;
+  bool shouldRepaint(_HexPainter old) => old.piece != piece;
 }

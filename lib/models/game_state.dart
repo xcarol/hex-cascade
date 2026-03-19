@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:math';
+
+import 'package:hex_cascade/models/piece_generator.dart';
 
 /// Colours available for hex tiles.
 enum TileColor { red, blue, green, yellow, purple, cyan }
@@ -45,17 +46,18 @@ class GameState {
   int level;
   int movesInLevel;
   List<List<HexTile?>> board;
-  int? currentPieceValue;
+  Piece? currentPiece;
 
   static const int rows = 7;
   static const int cols = 7;
+  static const int explosionThreshold = 20;
 
   GameState({
     this.score = 0,
     this.level = 1,
     this.movesInLevel = 0,
     List<List<HexTile?>>? board,
-  }) : board = board ?? _emptyBoard(){
+  }) : board = board ?? _emptyBoard() {
     generateNextPiece();
   }
 
@@ -92,7 +94,6 @@ class GameState {
   }
 
   void generateNextPiece() {
-    final random = Random();
-    currentPieceValue = random.nextInt(5) + 1; // valors entre 1 i 5
+    currentPiece = PieceGenerator.generate(board);
   }
 }
