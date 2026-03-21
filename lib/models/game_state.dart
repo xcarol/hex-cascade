@@ -47,6 +47,7 @@ class GameState {
   int movesInLevel;
   List<List<HexTile?>> board;
   Piece? currentPiece;
+  int moveCount = 0;
 
   static const int rows = 7;
   static const int cols = 7;
@@ -93,7 +94,11 @@ class GameState {
     return state;
   }
 
+  bool get isBoardFull {
+    return board.every((row) => row.every((tile) => tile != null));
+  }
+
   void generateNextPiece() {
-    currentPiece = PieceGenerator.generate(board);
+    currentPiece = PieceGenerator.generate(board, moveCount);
   }
 }
