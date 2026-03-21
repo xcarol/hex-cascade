@@ -68,10 +68,28 @@ class HexCascadeGame extends FlameGame {
     state.score += result.pointsScored;
 
     onScoreChanged?.call(state.score, state.level);
+    state.moveCount++;
     state.generateNextPiece();
     onPieceChanged?.call(state.currentPiece!);
     _hexGrid.populateFromState(state.board);
     _hexGrid.setSpecialMode(state.currentPiece!.isSpecial);
+
+    if (_isGameOver()) {
+      onGameOver?.call(state.score);
+    }
+  }
+
+  bool _isGameOver() {
+    final piece = state.currentPiece;
+    if (piece == null) return false;
+
+    if (piece.isSpecial) {
+      // Amb fitxa especial: game over si no hi ha cap cel·la ocupada
+      return state.board.every((row) => row.every((tile) => tile == null));
+    } else {
+      // Amb fitxa normal: game over si el tauler és ple
+      return state.isBoardFull;
+    }
   }
 
   Future<void> submitScore() async {
