@@ -51,7 +51,7 @@ class GameState {
 
   static const int rows = 5;
   static const int cols = 5;
-  static const int explosionThreshold = 10;
+  static const int baseThreshold = 10;
 
   GameState({
     this.score = 0,
@@ -60,6 +60,12 @@ class GameState {
     List<List<HexTile?>>? board,
   }) : board = board ?? _emptyBoard() {
     generateNextPiece();
+  }
+
+  int get explosionThreshold => baseThreshold + (level - 1) * 5;
+
+  bool get isBoardEmpty {
+    return board.every((row) => row.every((tile) => tile == null));
   }
 
   static List<List<HexTile?>> _emptyBoard() =>

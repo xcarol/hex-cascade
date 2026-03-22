@@ -18,6 +18,7 @@ class ExplosionEngine {
     required int row,
     required int col,
     required int value,
+    required int threshold,
     bool isSpecial = false,
   }) {
     final newBoard = _copyBoard(board);
@@ -44,8 +45,7 @@ class ExplosionEngine {
       for (int r = 0; r < GameState.rows; r++) {
         for (int c = 0; c < GameState.cols; c++) {
           final tile = newBoard[r][c];
-          if (tile != null &&
-              (tile.value ?? 0) >= GameState.explosionThreshold) {
+          if (tile != null && (tile.value ?? 0) >= threshold) {
             final originalValue = tile.value!;
             points += originalValue;
             newBoard[r][c] = null;

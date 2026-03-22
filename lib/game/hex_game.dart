@@ -61,11 +61,17 @@ class HexCascadeGame extends FlameGame {
       row: row,
       col: col,
       value: piece.value,
+      threshold: state.explosionThreshold,
       isSpecial: piece.isSpecial,
     );
 
     state.board = result.board;
     state.score += result.pointsScored;
+
+    if (state.isBoardEmpty) {
+      _onLevelUp();
+      return;
+    }
 
     onScoreChanged?.call(state.score, state.level);
     state.moveCount++;
@@ -77,6 +83,20 @@ class HexCascadeGame extends FlameGame {
     if (_isGameOver()) {
       onGameOver?.call(state.score);
     }
+  }
+
+  void _onLevelUp() {
+    state.level++;
+    state.moveCount = 0;
+
+    final bonus = state.level * 100;
+    state.score += bonus;
+    onScoreChanged?.call(state.score, state.level);
+
+    state.generateNextPiece();
+    onPieceChanged?.call(state.currentPiece!);
+    _hexGrid.populateFromState(state.board);
+    _hexGrid.setSpecialMode(state.currentPiece!.isSpecial);
   }
 
   bool _isGameOver() {
