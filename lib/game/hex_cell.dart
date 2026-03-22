@@ -69,7 +69,6 @@ class HexCell extends PositionComponent with TapCallbacks {
     final center = Offset(size.x / 2, size.y / 2);
     final r = hexSize * _scale * 0.9;
 
-    // Fons
     final fillPaint = Paint()..color = isEmpty ? _emptyColor : _filledColor;
     final borderPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
@@ -80,7 +79,6 @@ class HexCell extends PositionComponent with TapCallbacks {
     canvas.drawPath(path, fillPaint);
     canvas.drawPath(path, borderPaint);
 
-    // Valor
     if (!isEmpty) {
       final text = value?.toString() ?? '';
       final textPainter = TextPainter(

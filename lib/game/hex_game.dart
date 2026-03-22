@@ -84,10 +84,8 @@ class HexCascadeGame extends FlameGame {
     if (piece == null) return false;
 
     if (piece.isSpecial) {
-      // Amb fitxa especial: game over si no hi ha cap cel·la ocupada
       return state.board.every((row) => row.every((tile) => tile == null));
     } else {
-      // Amb fitxa normal: game over si el tauler és ple
       return state.isBoardFull;
     }
   }

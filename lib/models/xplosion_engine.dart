@@ -25,7 +25,6 @@ class ExplosionEngine {
     bool consumed = false;
 
     if (isSpecial) {
-      // Fitxa especial: suma directament a la cel·la existent
       final tile = newBoard[row][col];
       if (tile != null) {
         newBoard[row][col] = HexTile(
@@ -36,12 +35,9 @@ class ExplosionEngine {
         );
       }
     } else {
-      // Fitxa normal: col·loca i acumula als veïns
       newBoard[row][col] = HexTile(row: row, col: col, value: value);
       _accumulateNeighbours(newBoard, row, col, value);
     }
-
-    // Processa explosions
     bool anyExplosion = true;
     while (anyExplosion) {
       anyExplosion = false;
@@ -102,15 +98,12 @@ class ExplosionEngine {
       final c = n[1];
       final tile = board[r][c];
       if (tile != null) {
-        // final impact = value - (tile.value ?? 0);
-        // if (impact >= 0) {
         board[r][c] = HexTile(
           row: r,
           col: c,
           value: value + (tile.value ?? 0),
           color: tile.color,
         );
-        // }
       }
     }
   }

@@ -290,11 +290,11 @@ class _HexPainter extends CustomPainter {
 
     final fillPaint = Paint()
       ..color = piece.isSpecial
-          ? const Color(0xFF1A5C4A)  // verd fosc per especials
-          : const Color(0xFF4A7A9B); // blau per normals
+          ? const Color(0xFF1A5C4A)
+          : const Color(0xFF4A7A9B);
     final borderPaint = Paint()
       ..color = piece.isSpecial
-          ? const Color(0xFF64FFDA)  // vora verda brillant per especials
+          ? const Color(0xFF64FFDA)
           : Colors.white24
       ..style = PaintingStyle.stroke
       ..strokeWidth = piece.isSpecial ? 3 : 2;
