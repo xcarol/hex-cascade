@@ -4,11 +4,8 @@ import 'screens/main_menu_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Allow all orientations on desktop; prefer portrait on mobile.
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
   ]);
   runApp(const HexCascadeApp());
 }
