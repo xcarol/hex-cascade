@@ -11,7 +11,6 @@ class HexCell extends PositionComponent with TapCallbacks {
   final int col;
   int? value;
   TileColor? color;
-  bool isSpecialMode = false;
 
   static const double hexSize = 36.0;
   static const Color _emptyColor = Color(0xFF1A2A3A);
@@ -33,6 +32,13 @@ class HexCell extends PositionComponent with TapCallbacks {
          size: Vector2.all(hexSize * 2),
          anchor: Anchor.center,
        );
+
+  @override
+  bool containsLocalPoint(Vector2 point) {
+    final center = size / 2;
+    final path = _hexPath(center.toOffset(), hexSize);
+    return path.contains(point.toOffset());
+  }
 
   bool get isEmpty => value == null && color == null;
 
