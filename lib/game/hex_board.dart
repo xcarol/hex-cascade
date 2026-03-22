@@ -29,13 +29,11 @@ class HexBoard extends Component {
     final vw = game.size.x;
     final vh = game.size.y;
 
-    final totalW =
-        GameState.cols * HexCell.hexSize * sqrt(3) +
-        HexCell.hexSize * sqrt(3) / 2;
+    final w = HexCell.hexSize * sqrt(3);
+    final horizontalTotal = (GameState.cols - 0.5) * w;
     final totalH =
-        GameState.rows * HexCell.hexSize * 1.5 + HexCell.hexSize * 0.5;
-
-    gridOffset = Vector2((vw - totalW) / 2, (vh - totalH) / 2 + 30);
+        (GameState.rows - 1) * HexCell.hexSize * 1.5 + HexCell.hexSize * 2;
+    gridOffset = Vector2((vw - horizontalTotal) / 2, (vh - totalH) / 2 + 30);
   }
 
   void setSpecialMode(bool isSpecial) {
