@@ -49,9 +49,9 @@ class GameState {
   Piece? currentPiece;
   int moveCount = 0;
 
-  static const int rows = 7;
-  static const int cols = 7;
-  static const int explosionThreshold = 20;
+  static const int rows = 5;
+  static const int cols = 5;
+  static const int explosionThreshold = 10;
 
   GameState({
     this.score = 0,
