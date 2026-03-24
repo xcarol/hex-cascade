@@ -1,3 +1,5 @@
+import 'package:hex_cascade/models/piece_generator.dart';
+
 import 'game_state.dart';
 
 class ExplosionResult {
@@ -19,38 +21,58 @@ class ExplosionEngine {
     required int col,
     required int value,
     required int threshold,
-    bool isSpecial = false,
+    required PieceType pieceType,
   }) {
     final newBoard = _copyBoard(board);
     int points = 0;
     bool consumed = false;
 
-    if (isSpecial) {
-      final tile = newBoard[row][col];
-      if (tile != null) {
+    final currentTile = newBoard[row][col];
+    final currentValue = currentTile?.value ?? 0;
+    final newValue = currentValue + value;
+
+    if (pieceType == PieceType.negative) {
+      // Fitxa negativa: resta el valor, no afecta veïns
+      if (newValue <= 0) {
+        newBoard[row][col] = null;
+      } else {
         newBoard[row][col] = HexTile(
           row: row,
           col: col,
-          value: (tile.value ?? 0) + value,
-          color: tile.color,
+          value: newValue,
+          color: currentTile?.color,
         );
       }
+    } else if (newValue == threshold) {
+      // Explosió! Valor exacte assolit
+      points += threshold;
+      consumed = true;
+      newBoard[row][col] = null;
+      _addOneToNeighbours(newBoard, row, col);
     } else {
-      newBoard[row][col] = HexTile(row: row, col: col, value: value);
-      _accumulateNeighbours(newBoard, row, col, value);
+      // Valor vàlid: col·loca la fitxa i afecta veïns
+      newBoard[row][col] = HexTile(
+        row: row,
+        col: col,
+        value: newValue,
+        color: currentTile?.color,
+      );
+      // Afecta veïns si la cel·la era buida (normal o positiva a cel·la buida)
+      if (currentTile == null) {
+        _accumulateNeighbours(newBoard, row, col, value);
+      }
     }
+
+    // Explosions en cadena dels veïns
     bool anyExplosion = true;
     while (anyExplosion) {
       anyExplosion = false;
       for (int r = 0; r < GameState.rows; r++) {
         for (int c = 0; c < GameState.cols; c++) {
           final tile = newBoard[r][c];
-          if (tile != null && (tile.value ?? 0) >= threshold) {
-            final originalValue = tile.value!;
-            points += originalValue;
+          if (tile != null && tile.value == threshold) {
+            points += threshold;
             newBoard[r][c] = null;
-            if (r == row && c == col) consumed = true;
-            newBoard[row][col] = null;
             _addOneToNeighbours(newBoard, r, c);
             anyExplosion = true;
             break;
@@ -67,26 +89,6 @@ class ExplosionEngine {
     );
   }
 
-  static void _addOneToNeighbours(
-    List<List<HexTile?>> board,
-    int row,
-    int col,
-  ) {
-    for (final n in _getNeighbours(row, col)) {
-      final r = n[0];
-      final c = n[1];
-      final tile = board[r][c];
-      if (tile != null) {
-        board[r][c] = HexTile(
-          row: r,
-          col: c,
-          value: (tile.value ?? 0) + 1,
-          color: tile.color,
-        );
-      }
-    }
-  }
-
   static void _accumulateNeighbours(
     List<List<HexTile?>> board,
     int row,
@@ -101,7 +103,27 @@ class ExplosionEngine {
         board[r][c] = HexTile(
           row: r,
           col: c,
-          value: value + (tile.value ?? 0),
+          value: (tile.value ?? 0) + value,
+          color: tile.color,
+        );
+      }
+    }
+  }
+
+  static void _addOneToNeighbours(
+    List<List<HexTile?>> board,
+    int row,
+    int col,
+  ) {
+    for (final n in _getNeighbours(row, col)) {
+      final r = n[0];
+      final c = n[1];
+      final tile = board[r][c];
+      if (tile != null) {
+        board[r][c] = HexTile(
+          row: r,
+          col: c,
+          value: (tile.value ?? 0) + 1,
           color: tile.color,
         );
       }

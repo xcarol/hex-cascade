@@ -36,10 +36,10 @@ class HexBoard extends Component {
     gridOffset = Vector2((vw - horizontalTotal) / 2, (vh - totalH) / 2 + 30);
   }
 
-  void setSpecialMode(bool isSpecial) {
+  void setPlacementMode(PlacementMode mode) {
     for (final row in _components) {
       for (final cell in row) {
-        cell?.isSpecialMode = isSpecial;
+        cell?.placementMode = mode;
       }
     }
   }

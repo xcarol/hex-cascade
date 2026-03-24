@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hex_cascade/models/piece_generator.dart';
 import 'package:hex_cascade/models/xplosion_engine.dart';
 import '../models/game_state.dart';
-import '../services/games_service.dart';
+import 'hex_cell.dart' show PlacementMode;
 import 'hex_board.dart';
 
 /// Callback types for communicating back to Flutter widgets.
@@ -37,15 +37,13 @@ class HexCascadeGame extends FlameGame {
     _hexGrid = HexBoard(onCellTapped: _onCellTapped);
     await add(_hexGrid);
 
-    state.generateNextPiece();
-
     if (state.board.every((row) => row.every((t) => t == null))) {
       _hexGrid.build();
     } else {
       _hexGrid.populateFromState(state.board);
     }
 
-    _hexGrid.setSpecialMode(state.currentPiece!.isSpecial);
+    _updatePlacementMode();
   }
 
   void _onCellTapped(int row, int col) {
@@ -55,8 +53,13 @@ class HexCascadeGame extends FlameGame {
 
     final tile = state.board[row][col];
 
-    if (piece.isSpecial && tile == null) return;
-    if (!piece.isSpecial && tile != null) return;
+    if (piece.isNormal && tile != null) return;
+    if (piece.isNegative && tile == null) return;
+    if (piece.isSpecial &&
+        tile != null &&
+        (tile.value ?? 0) + piece.value != state.explosionThreshold) {
+      return;
+    }
 
     final result = ExplosionEngine.process(
       board: state.board,
@@ -64,7 +67,7 @@ class HexCascadeGame extends FlameGame {
       col: col,
       value: piece.value,
       threshold: state.explosionThreshold,
-      isSpecial: piece.isSpecial,
+      pieceType: piece.type,
     );
 
     state.board = result.board;
@@ -80,7 +83,7 @@ class HexCascadeGame extends FlameGame {
     state.generateNextPiece();
     onPieceChanged?.call(state.currentPiece!);
     _hexGrid.populateFromState(state.board);
-    _hexGrid.setSpecialMode(state.currentPiece!.isSpecial);
+    _updatePlacementMode();
 
     if (_isGameOver()) {
       onGameOver?.call(state.score);
@@ -98,22 +101,31 @@ class HexCascadeGame extends FlameGame {
     state.generateNextPiece();
     onPieceChanged?.call(state.currentPiece!);
     _hexGrid.populateFromState(state.board);
-    _hexGrid.setSpecialMode(state.currentPiece!.isSpecial);
+    _updatePlacementMode();
   }
 
   bool _isGameOver() {
     final piece = state.currentPiece;
     if (piece == null) return false;
 
-    if (piece.isSpecial) {
+    if (piece.isNegative) {
       return state.board.every((row) => row.every((tile) => tile == null));
     } else {
       return state.isBoardFull;
     }
   }
 
-  Future<void> submitScore() async {
-    await GamesService.submitScore(state.score);
+  void _updatePlacementMode() {
+    final piece = state.currentPiece;
+    if (piece == null) return;
+
+    if (piece.isNegative) {
+      _hexGrid.setPlacementMode(PlacementMode.negative);
+    } else if (piece.isSpecial) {
+      _hexGrid.setPlacementMode(PlacementMode.special);
+    } else {
+      _hexGrid.setPlacementMode(PlacementMode.normalOccupied);
+    }
   }
 
   void _saveState() {

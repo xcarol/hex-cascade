@@ -21,6 +21,7 @@ class _GameScreenState extends State<GameScreen> {
   late HexCascadeGame _game;
   int _score = 0;
   int _level = 1;
+  int _threshold = 0;
   bool _paused = false;
   Piece? _currentPiece;
 
@@ -29,15 +30,18 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     _score = widget.state.score;
     _level = widget.state.level;
+    _threshold = widget.state.explosionThreshold;
     _currentPiece = widget.state.currentPiece;
 
     _game = HexCascadeGame(
       state: widget.state,
       onScoreChanged: (s, l) {
         if (mounted) {
+          debugPrint('Score changed: $s, Level: $l, Threshold: ${widget.state.explosionThreshold}');
           setState(() {
             _score = s;
             _level = l;
+            _threshold = widget.state.explosionThreshold;
           });
         }
       },
@@ -129,6 +133,7 @@ class _GameScreenState extends State<GameScreen> {
               level: _level,
               paused: _paused,
               onUndo: _undo,
+              threshold: _threshold,
               onPause: _togglePause,
               onQuit: _quit,
             ),
@@ -168,12 +173,14 @@ class _HUD extends StatelessWidget {
   final int level;
   final bool paused;
   final VoidCallback onUndo;
+  final int threshold;
   final VoidCallback onPause;
   final VoidCallback onQuit;
 
   const _HUD({
     required this.score,
     required this.level,
+    required this.threshold,
     required this.paused,
     required this.onUndo,
     required this.onPause,
@@ -243,6 +250,26 @@ class _HUD extends StatelessWidget {
               ),
             ],
           ),
+          Column(
+            children: [
+              Text(
+                'TARGET',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 10,
+                  letterSpacing: 3,
+                ),
+              ),
+              Text(
+                '$threshold',
+                style: const TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(width: 8),
           IconButton(
             onPressed: onUndo,
@@ -278,10 +305,10 @@ class _CurrentPieceWidget extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            piece!.isSpecial ? 'FITXA ESPECIAL' : 'FITXA ACTUAL',
+            piece!.isNegative ? 'FITXA NEGATIVA' : 'FITXA ACTUAL',
             style: TextStyle(
-              color: piece!.isSpecial
-                  ? const Color(0xFF64FFDA)
+              color: piece!.isNegative
+                  ? const Color(0xFFFF6B6B)
                   : Colors.white38,
               fontSize: 10,
               letterSpacing: 3,
@@ -308,15 +335,15 @@ class _HexPainter extends CustomPainter {
     final r = size.width / 2 * 0.9;
 
     final fillPaint = Paint()
-      ..color = piece.isSpecial
-          ? const Color(0xFF1A5C4A)
+      ..color = piece.isNegative
+          ? const Color(0xFF5C1A1A)
           : const Color(0xFF4A7A9B);
     final borderPaint = Paint()
-      ..color = piece.isSpecial
-          ? const Color(0xFF64FFDA)
-          : Colors.white24
+      ..color = piece.isNegative ? const Color(0xFFFF6B6B) : Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = piece.isSpecial ? 3 : 2;
+      ..strokeWidth = piece.isNegative ? 3 : 2;
+
+    final label = piece.isNegative ? '${piece.value}' : '+${piece.value}';
 
     final path = Path();
     for (int i = 0; i < 6; i++) {
@@ -330,27 +357,21 @@ class _HexPainter extends CustomPainter {
     canvas.drawPath(path, fillPaint);
     canvas.drawPath(path, borderPaint);
 
-    final label = piece.isSpecial
-        ? '+${piece.value}'
-        : '${piece.value}';
-
     final tp = TextPainter(
       text: TextSpan(
         text: label,
         style: TextStyle(
-          color: piece.isSpecial
-              ? const Color(0xFF64FFDA)
-              : Colors.white,
+          color: Colors.white,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(
-      center.dx - tp.width / 2,
-      center.dy - tp.height / 2,
-    ));
+    tp.paint(
+      canvas,
+      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
+    );
   }
 
   @override

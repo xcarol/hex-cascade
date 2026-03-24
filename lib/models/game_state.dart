@@ -113,7 +113,7 @@ class GameState {
   }
 
   void generateNextPiece() {
-    currentPiece = PieceGenerator.generate(board, moveCount);
+    currentPiece = PieceGenerator.generate(board, moveCount, explosionThreshold);
   }
 
   GameStateSnapshot createSnapshot() {

@@ -4,6 +4,8 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 
+enum PlacementMode { normalOccupied, special, negative }
+
 class HexCell extends PositionComponent with TapCallbacks {
   final void Function(int row, int col)? onTapped;
 
@@ -11,6 +13,7 @@ class HexCell extends PositionComponent with TapCallbacks {
   final int col;
   int? value;
   TileColor? color;
+  PlacementMode placementMode = PlacementMode.normalOccupied;
 
   static const double hexSize = 36.0;
   static const Color _emptyColor = Color(0xFF1A2A3A);
@@ -44,8 +47,14 @@ class HexCell extends PositionComponent with TapCallbacks {
 
   @override
   void onTapDown(TapDownEvent event) {
-    if (isSpecialMode && !isEmpty) onTapped?.call(row, col);
-    if (!isSpecialMode && isEmpty) onTapped?.call(row, col);
+    switch (placementMode) {
+      case PlacementMode.normalOccupied:
+        if (isEmpty) onTapped?.call(row, col);
+      case PlacementMode.special:
+        onTapped?.call(row, col); // buida o ocupada
+      case PlacementMode.negative:
+        if (!isEmpty) onTapped?.call(row, col);
+    }
   }
 
   void playAnimation() {
