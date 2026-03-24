@@ -10,6 +10,9 @@ class Piece {
   const Piece({required this.value, required this.type});
 
   bool get isSpecial => type == PieceType.special;
+  bool get isNormal => type == PieceType.normal;
+
+  Piece copy() => Piece(value: value, type: type);
 }
 
 class PieceGenerator {
