@@ -68,6 +68,14 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  void _undo() {
+    if (_game.canUndo()) {
+      setState(() {
+        _game.undo();
+      });
+    }
+  }
+
   Future<void> _quit() async {
     _game.pauseEngine();
     final save = await SaveService.hasSavedGame();
@@ -120,6 +128,7 @@ class _GameScreenState extends State<GameScreen> {
               score: _score,
               level: _level,
               paused: _paused,
+              onUndo: _undo,
               onPause: _togglePause,
               onQuit: _quit,
             ),
@@ -158,6 +167,7 @@ class _HUD extends StatelessWidget {
   final int score;
   final int level;
   final bool paused;
+  final VoidCallback onUndo;
   final VoidCallback onPause;
   final VoidCallback onQuit;
 
@@ -165,6 +175,7 @@ class _HUD extends StatelessWidget {
     required this.score,
     required this.level,
     required this.paused,
+    required this.onUndo,
     required this.onPause,
     required this.onQuit,
   });
@@ -233,6 +244,14 @@ class _HUD extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 8),
+          IconButton(
+            onPressed: onUndo,
+            icon: const Icon(
+              Icons.undo_rounded,
+              color: Colors.white70,
+              size: 24,
+            ),
+          ),
           IconButton(
             onPressed: onPause,
             icon: Icon(
