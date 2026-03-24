@@ -38,6 +38,14 @@ class HexTile {
         : null,
     isEmpty: json['isEmpty'] as bool,
   );
+
+  HexTile copy() => HexTile(
+        row: row,
+        col: col,
+        value: value,
+        color: color,
+        isEmpty: isEmpty,
+      );
 }
 
 /// Full serialisable state of an in-progress game.
@@ -107,4 +115,32 @@ class GameState {
   void generateNextPiece() {
     currentPiece = PieceGenerator.generate(board, moveCount);
   }
+
+  GameStateSnapshot createSnapshot() {
+    final boardCopy =
+        board.map((row) => row.map((tile) => tile?.copy()).toList()).toList();
+    return GameStateSnapshot(
+      board: boardCopy,
+      score: score,
+      level: level,
+      currentPiece: currentPiece?.copy(),
+      moveCount: moveCount,
+    );
+  }
+}
+
+class GameStateSnapshot {
+  final List<List<HexTile?>> board;
+  final int score;
+  final int level;
+  final Piece? currentPiece;
+  final int moveCount;
+
+  GameStateSnapshot({
+    required this.board,
+    required this.score,
+    required this.level,
+    this.currentPiece,
+    required this.moveCount,
+  });
 }

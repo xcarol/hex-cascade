@@ -18,6 +18,7 @@ class HexCascadeGame extends FlameGame {
 
   final GameState state;
   late final HexBoard _hexGrid;
+  final List<GameStateSnapshot> _history = [];
 
   HexCascadeGame({
     required this.state,
@@ -48,6 +49,7 @@ class HexCascadeGame extends FlameGame {
   }
 
   void _onCellTapped(int row, int col) {
+    _saveState();
     final piece = state.currentPiece;
     if (piece == null) return;
 
@@ -112,5 +114,31 @@ class HexCascadeGame extends FlameGame {
 
   Future<void> submitScore() async {
     await GamesService.submitScore(state.score);
+  }
+
+  void _saveState() {
+    _history.add(state.createSnapshot());
+    if (_history.length > 20) {
+      _history.removeAt(0);
+    }
+  }
+
+  bool canUndo() => _history.isNotEmpty;
+
+  void undo() {
+    if (_history.isEmpty) return;
+
+    final snapshot = _history.removeLast();
+    state.board = snapshot.board;
+    state.score = snapshot.score;
+    state.level = snapshot.level;
+    state.currentPiece = snapshot.currentPiece;
+    state.moveCount = snapshot.moveCount;
+
+    onScoreChanged?.call(state.score, state.level);
+    if (state.currentPiece != null) {
+      onPieceChanged?.call(state.currentPiece!);
+    }
+    _hexGrid.populateFromState(state.board);
   }
 }
