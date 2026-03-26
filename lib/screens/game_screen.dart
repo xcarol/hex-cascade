@@ -35,13 +35,13 @@ class _GameScreenState extends State<GameScreen> {
 
     _game = HexCascadeGame(
       state: widget.state,
-      onScoreChanged: (s, l) {
+      onScoreChanged: (s, l, t) {
         if (mounted) {
-          debugPrint('Score changed: $s, Level: $l, Threshold: ${widget.state.explosionThreshold}');
+          debugPrint('Score changed: $s, Level: $l, Threshold: $t');
           setState(() {
             _score = s;
             _level = l;
-            _threshold = widget.state.explosionThreshold;
+            _threshold = t;
           });
         }
       },

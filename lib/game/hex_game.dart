@@ -7,7 +7,7 @@ import 'hex_cell.dart' show PlacementMode;
 import 'hex_board.dart';
 
 /// Callback types for communicating back to Flutter widgets.
-typedef ScoreCallback = void Function(int score, int level);
+typedef ScoreCallback = void Function(int score, int level, int threshold);
 typedef GameOverCallback = void Function(int finalScore);
 typedef PieceCallback = void Function(Piece piece);
 
@@ -78,7 +78,7 @@ class HexCascadeGame extends FlameGame {
       return;
     }
 
-    onScoreChanged?.call(state.score, state.level);
+    onScoreChanged?.call(state.score, state.level, state.explosionThreshold);
     state.moveCount++;
     state.generateNextPiece();
     onPieceChanged?.call(state.currentPiece!);
@@ -96,7 +96,7 @@ class HexCascadeGame extends FlameGame {
 
     final bonus = state.level * 100;
     state.score += bonus;
-    onScoreChanged?.call(state.score, state.level);
+    onScoreChanged?.call(state.score, state.level, state.explosionThreshold);
 
     state.generateNextPiece();
     onPieceChanged?.call(state.currentPiece!);
@@ -147,7 +147,7 @@ class HexCascadeGame extends FlameGame {
     state.currentPiece = snapshot.currentPiece;
     state.moveCount = snapshot.moveCount;
 
-    onScoreChanged?.call(state.score, state.level);
+    onScoreChanged?.call(state.score, state.level, state.explosionThreshold);
     if (state.currentPiece != null) {
       onPieceChanged?.call(state.currentPiece!);
     }
