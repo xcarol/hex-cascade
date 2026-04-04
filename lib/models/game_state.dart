@@ -131,12 +131,14 @@ class GameState {
   GameStateSnapshot createSnapshot() {
     final boardCopy =
         board.map((row) => row.map((tile) => tile?.copy()).toList()).toList();
+    final rackCopy = rack.map((p) => p?.copy()).toList();
+    
     return GameStateSnapshot(
       score: score,
       explosionThreshold: explosionThreshold,
       moveCount: moveCount,
       board: boardCopy,
-      rack: rack,
+      rack: rackCopy,
     );
   }
 }
