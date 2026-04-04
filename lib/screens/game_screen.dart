@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flame/game.dart';
+import 'package:flame/game.dart' hide Matrix4;
 import 'package:hex_cascade/models/piece_generator.dart';
 import '../game/hex_game.dart';
 import '../models/game_state.dart';
@@ -20,27 +20,25 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   late HexCascadeGame _game;
   int _score = 0;
-  int _level = 1;
   int _threshold = 0;
   bool _paused = false;
-  Piece? _currentPiece;
+  List<Piece?> _rack = [];
+  int? _selectedRackIndex;
 
   @override
   void initState() {
     super.initState();
     _score = widget.state.score;
-    _level = widget.state.level;
     _threshold = widget.state.explosionThreshold;
-    _currentPiece = widget.state.currentPiece;
+    _rack = widget.state.rack;
 
     _game = HexCascadeGame(
       state: widget.state,
-      onScoreChanged: (s, l, t) {
+      onScoreChanged: (s, t) {
         if (mounted) {
-          debugPrint('Score changed: $s, Level: $l, Threshold: $t');
+          debugPrint('Score changed: $s, Threshold: $t');
           setState(() {
             _score = s;
-            _level = l;
             _threshold = t;
           });
         }
@@ -55,8 +53,13 @@ class _GameScreenState extends State<GameScreen> {
           );
         }
       },
-      onPieceChanged: (piece) {
-        if (mounted) setState(() => _currentPiece = piece);
+      onRackChanged: (rack) {
+        if (mounted) {
+          setState(() {
+            _rack = rack;
+            _selectedRackIndex = null;
+          });
+        }
       },
     );
   }
@@ -130,7 +133,6 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             _HUD(
               score: _score,
-              level: _level,
               paused: _paused,
               onUndo: _undo,
               threshold: _threshold,
@@ -159,7 +161,14 @@ class _GameScreenState extends State<GameScreen> {
                 ],
               ),
             ),
-            _CurrentPieceWidget(piece: _currentPiece),
+            _RackWidget(
+              rack: _rack,
+              selectedIndex: _selectedRackIndex,
+              onPieceSelected: (index) {
+                setState(() => _selectedRackIndex = index);
+                _game.selectRackPiece(index);
+              },
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -170,7 +179,6 @@ class _GameScreenState extends State<GameScreen> {
 
 class _HUD extends StatelessWidget {
   final int score;
-  final int level;
   final bool paused;
   final VoidCallback onUndo;
   final int threshold;
@@ -179,7 +187,6 @@ class _HUD extends StatelessWidget {
 
   const _HUD({
     required this.score,
-    required this.level,
     required this.threshold,
     required this.paused,
     required this.onUndo,
@@ -233,26 +240,6 @@ class _HUD extends StatelessWidget {
           Column(
             children: [
               Text(
-                'NIVELL',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 10,
-                  letterSpacing: 3,
-                ),
-              ),
-              Text(
-                '$level',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              Text(
                 'TARGET',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.5),
@@ -293,61 +280,105 @@ class _HUD extends StatelessWidget {
   }
 }
 
-class _CurrentPieceWidget extends StatelessWidget {
-  final Piece? piece;
-  const _CurrentPieceWidget({required this.piece});
+class _RackWidget extends StatelessWidget {
+  final List<Piece?> rack;
+  final int? selectedIndex;
+  final void Function(int index) onPieceSelected;
+
+  const _RackWidget({
+    required this.rack,
+    required this.selectedIndex,
+    required this.onPieceSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (piece == null) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        children: [
-          Text(
-            piece!.isNegative ? 'FITXA NEGATIVA' : 'FITXA ACTUAL',
-            style: TextStyle(
-              color: piece!.isNegative
-                  ? const Color(0xFFFF6B6B)
-                  : Colors.white38,
-              fontSize: 10,
-              letterSpacing: 3,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(rack.length, (i) {
+          final piece = rack[i];
+          final isSelected = selectedIndex == i;
+          return GestureDetector(
+            onTap: piece != null ? () => onPieceSelected(i) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              transform: isSelected
+                  ? (Matrix4.identity()..translate(0.0, -8.0))
+                  : Matrix4.identity(),
+              child: CustomPaint(
+                size: const Size(64, 64),
+                painter: piece != null
+                    ? _HexPainter(piece: piece, isSelected: isSelected)
+                    : _EmptyHexPainter(),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          CustomPaint(
-            size: const Size(72, 72),
-            painter: _HexPainter(piece: piece!),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
 }
 
+class _EmptyHexPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2 * 0.9;
+    final paint = Paint()
+      ..color = Colors.white10
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = (3.14159 / 3) * i - 3.14159 / 6;
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_EmptyHexPainter old) => false;
+}
+
 class _HexPainter extends CustomPainter {
   final Piece piece;
-  const _HexPainter({required this.piece});
+  final bool isSelected;
+  const _HexPainter({required this.piece, this.isSelected = false});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final r = size.width / 2 * 0.9;
 
-    final fillPaint = Paint()
-      ..color = piece.isNegative
-          ? const Color(0xFF5C1A1A)
-          : const Color(0xFF4A7A9B);
-    final borderPaint = Paint()
-      ..color = piece.isNegative ? const Color(0xFFFF6B6B) : Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = piece.isNegative ? 3 : 2;
+    final fillColor = piece.isSubtract
+        ? const Color(0xFF5C1A1A)
+        : piece.isSum
+        ? const Color(0xFF1A5C4A)
+        : const Color(0xFF4A7A9B);
 
-    final label = piece.isNegative ? '${piece.value}' : '+${piece.value}';
+    final borderColor = piece.isSubtract
+        ? const Color(0xFFFF6B6B)
+        : piece.isSum
+        ? const Color(0xFF64FFDA)
+        : isSelected
+        ? Colors.white
+        : Colors.white24;
+
+    final fillPaint = Paint()..color = fillColor;
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isSelected ? 3 : 2;
 
     final path = Path();
     for (int i = 0; i < 6; i++) {
-      final angle = (pi / 3) * i - pi / 6;
+      final angle = (3.14159 / 3) * i - 3.14159 / 6;
       final x = center.dx + r * cos(angle);
       final y = center.dy + r * sin(angle);
       i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
@@ -357,12 +388,18 @@ class _HexPainter extends CustomPainter {
     canvas.drawPath(path, fillPaint);
     canvas.drawPath(path, borderPaint);
 
+    final label = piece.isSubtract
+        ? '✕'
+        : piece.isSum
+        ? '+${piece.value}'
+        : '${piece.value}';
+
     final tp = TextPainter(
       text: TextSpan(
         text: label,
         style: TextStyle(
-          color: Colors.white,
-          fontSize: 24,
+          color: piece.isSubtract ? const Color(0xFFFF6B6B) : Colors.white,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -375,5 +412,6 @@ class _HexPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HexPainter old) => old.piece != piece;
+  bool shouldRepaint(_HexPainter old) =>
+      old.piece != piece || old.isSelected != isSelected;
 }

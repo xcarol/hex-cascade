@@ -1,17 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:hex_cascade/models/piece_generator.dart';
-
 import 'game_state.dart';
+import 'piece_generator.dart';
 
 class ExplosionResult {
   final List<List<HexTile?>> board;
   final int pointsScored;
-  final bool placedTileConsumed;
+  final int newThreshold;
+  final HexTile? capturedTile;
 
   const ExplosionResult({
     required this.board,
     required this.pointsScored,
-    required this.placedTileConsumed,
+    required this.newThreshold,
+    this.capturedTile,
   });
 }
 
@@ -20,68 +20,67 @@ class ExplosionEngine {
     required List<List<HexTile?>> board,
     required int row,
     required int col,
-    required int value,
+    required Piece piece,
     required int threshold,
-    required PieceType pieceType,
   }) {
     final newBoard = _copyBoard(board);
     int points = 0;
-    bool consumed = false;
+    int newThreshold = threshold;
+    HexTile? capturedTile;
 
+    if (piece.isSubtract) {
+      // Minus piece: removes the piece from the board and returns it to the rack
+      capturedTile = newBoard[row][col];
+      newBoard[row][col] = null;
+      return ExplosionResult(
+        board: newBoard,
+        pointsScored: 0,
+        newThreshold: newThreshold,
+        capturedTile: capturedTile,
+      );
+    }
+
+    // Number or plus piece: places and accumulates
     final currentTile = newBoard[row][col];
     final currentValue = currentTile?.value ?? 0;
-    final newValue = currentValue + value;
-    debugPrint(
-      '[$pieceType] ($row,$col) currentValue=$currentValue + value=$value = newValue=$newValue (threshold=$threshold)',
-    );
+    final newValue = currentValue + piece.value;
 
-    if (pieceType == PieceType.negative) {
-      // Fitxa negativa: resta el valor, no afecta veïns
-      debugPrint('→ Fitxa negativa, nou valor=$newValue');
-      if (newValue <= 0) {
-        newBoard[row][col] = null;
-      } else {
-        newBoard[row][col] = HexTile(
-          row: row,
-          col: col,
-          value: newValue,
-          color: currentTile?.color,
-        );
-      }
-    } else if (newValue == threshold) {
-      // Explosió! Valor exacte assolit
-      debugPrint('→ EXPLOSIÓ!');
-      points += threshold;
-      consumed = true;
+    // Checks if the new value exceeds the threshold → new threshold
+    if (newValue > newThreshold) {
+      newThreshold = newValue;
+    }
+
+    if (newValue >= threshold) {
+      // Explodes!
+      points += newValue;
       newBoard[row][col] = null;
-      _addOneToNeighbours(newBoard, row, col);
+      _accumulateNeighbours(newBoard, row, col, piece.value);
     } else {
-      // Valor vàlid: col·loca la fitxa i afecta veïns
-      debugPrint('→ Valor vàlid, col·loca fitxa');
+      // Places the piece
       newBoard[row][col] = HexTile(
         row: row,
         col: col,
         value: newValue,
-        color: currentTile?.color,
       );
-      // Afecta veïns si la cel·la era buida (normal o positiva a cel·la buida)
-      if (currentTile == null) {
-        _accumulateNeighbours(newBoard, row, col, value);
-      }
+      // Accumulates to neighbors and the score
+      points += _accumulateNeighboursAndScore(newBoard, row, col, piece.value);
     }
 
-    // Explosions en cadena dels veïns
+    // Chain explosions with multiplier
+    int chainMultiplier = 2;
     bool anyExplosion = true;
     while (anyExplosion) {
       anyExplosion = false;
       for (int r = 0; r < GameState.rows; r++) {
         for (int c = 0; c < GameState.cols; c++) {
           final tile = newBoard[r][c];
-          debugPrint('→ CADENA! ($r,$c) valor=${tile?.value}');
-          if (tile != null && (tile.value ?? 0) >= threshold) {
-            points += threshold;
+          if (tile != null && tile.value >= threshold) {
+            // Checks if it generates a new threshold
+            if (tile.value > newThreshold) newThreshold = tile.value;
+            points += tile.value * chainMultiplier;
             newBoard[r][c] = null;
-            _addOneToNeighbours(newBoard, r, c);
+            _accumulateNeighbours(newBoard, r, c, chainMultiplier);
+            chainMultiplier++;
             anyExplosion = true;
             break;
           }
@@ -93,8 +92,31 @@ class ExplosionEngine {
     return ExplosionResult(
       board: newBoard,
       pointsScored: points,
-      placedTileConsumed: consumed,
+      newThreshold: newThreshold,
     );
+  }
+
+  static int _accumulateNeighboursAndScore(
+    List<List<HexTile?>> board,
+    int row,
+    int col,
+    int value,
+  ) {
+    int points = 0;
+    for (final n in _getNeighbours(row, col)) {
+      final r = n[0];
+      final c = n[1];
+      final tile = board[r][c];
+      if (tile != null) {
+        board[r][c] = HexTile(
+          row: r,
+          col: col,
+          value: (tile.value) + value,
+        );
+        points += value; // adds to the score
+      }
+    }
+    return points;
   }
 
   static void _accumulateNeighbours(
@@ -111,28 +133,7 @@ class ExplosionEngine {
         board[r][c] = HexTile(
           row: r,
           col: c,
-          value: (tile.value ?? 0) + value,
-          color: tile.color,
-        );
-      }
-    }
-  }
-
-  static void _addOneToNeighbours(
-    List<List<HexTile?>> board,
-    int row,
-    int col,
-  ) {
-    for (final n in _getNeighbours(row, col)) {
-      final r = n[0];
-      final c = n[1];
-      final tile = board[r][c];
-      if (tile != null) {
-        board[r][c] = HexTile(
-          row: r,
-          col: c,
-          value: (tile.value ?? 0) + 1,
-          color: tile.color,
+          value: tile.value + value,
         );
       }
     }
@@ -140,25 +141,22 @@ class ExplosionEngine {
 
   static List<List<int>> _getNeighbours(int row, int col) {
     final isOdd = row % 2 == 1;
-    final neighbours =
-        [
-              [row - 1, isOdd ? col : col - 1],
-              [row - 1, isOdd ? col + 1 : col],
-              [row, col - 1],
-              [row, col + 1],
-              [row + 1, isOdd ? col : col - 1],
-              [row + 1, isOdd ? col + 1 : col],
-            ]
-            .where(
-              (n) =>
-                  n[0] >= 0 &&
-                  n[0] < GameState.rows &&
-                  n[1] >= 0 &&
-                  n[1] < GameState.cols,
-            )
-            .toList();
-    debugPrint('Veïns de ($row,$col): $neighbours');
-    return neighbours;
+    return [
+          [row - 1, isOdd ? col : col - 1],
+          [row - 1, isOdd ? col + 1 : col],
+          [row, col - 1],
+          [row, col + 1],
+          [row + 1, isOdd ? col : col - 1],
+          [row + 1, isOdd ? col + 1 : col],
+        ]
+        .where(
+          (n) =>
+              n[0] >= 0 &&
+              n[0] < GameState.rows &&
+              n[1] >= 0 &&
+              n[1] < GameState.cols,
+        )
+        .toList();
   }
 
   static List<List<HexTile?>> _copyBoard(List<List<HexTile?>> board) {

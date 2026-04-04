@@ -4,7 +4,7 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 
-enum PlacementMode { normalOccupied, special, negative }
+enum PlacementMode { none, normalOccupied, special, negative }
 
 class HexCell extends PositionComponent with TapCallbacks {
   final void Function(int row, int col)? onTapped;
@@ -48,10 +48,12 @@ class HexCell extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     switch (placementMode) {
+      case PlacementMode.none:
+        break;
       case PlacementMode.normalOccupied:
         if (isEmpty) onTapped?.call(row, col);
       case PlacementMode.special:
-        onTapped?.call(row, col); // buida o ocupada
+        onTapped?.call(row, col);
       case PlacementMode.negative:
         if (!isEmpty) onTapped?.call(row, col);
     }

@@ -1,24 +1,19 @@
 import 'dart:convert';
+import 'piece_generator.dart';
 
-import 'package:hex_cascade/models/piece_generator.dart';
-
-/// Colours available for hex tiles.
 enum TileColor { red, blue, green, yellow, purple, cyan }
 
-/// A single tile on the board.
 class HexTile {
   final int row;
   final int col;
-  final int? value;
+  final int value;
   final TileColor? color;
-  final bool isEmpty;
 
   HexTile({
     required this.row,
     required this.col,
-    this.value,
+    required this.value,
     this.color,
-    this.isEmpty = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -26,17 +21,15 @@ class HexTile {
     'col': col,
     'value': value,
     'color': color?.index,
-    'isEmpty': isEmpty,
   };
 
   factory HexTile.fromJson(Map<String, dynamic> json) => HexTile(
     row: json['row'] as int,
     col: json['col'] as int,
-    value: json['value'] as int?,
+    value: json['value'] as int,
     color: json['color'] != null
         ? TileColor.values[json['color'] as int]
         : null,
-    isEmpty: json['isEmpty'] as bool,
   );
 
   HexTile copy() => HexTile(
@@ -44,40 +37,55 @@ class HexTile {
         col: col,
         value: value,
         color: color,
-        isEmpty: isEmpty,
       );
 }
 
-/// Full serialisable state of an in-progress game.
 class GameState {
   int score;
-  int level;
-  int movesInLevel;
+  int explosionThreshold;
+  int moveCount;
   List<List<HexTile?>> board;
-  Piece? currentPiece;
-  int moveCount = 0;
+  List<Piece?> rack;
 
   static const int rows = 5;
   static const int cols = 5;
-  static const int baseThreshold = 10;
+  static const int rackSize = 3;
 
   GameState({
     this.score = 0,
-    this.level = 1,
-    this.movesInLevel = 0,
+    this.explosionThreshold = 10,
+    this.moveCount = 0,
     List<List<HexTile?>>? board,
-  }) : board = board ?? _emptyBoard() {
-    generateNextPiece();
+    List<Piece?>? rack,
+  }) : board = board ?? _emptyBoard(),
+       rack = rack ?? List.filled(rackSize, null) {
+    PieceGenerator.reset();
+    _fillRack();
   }
 
-  int get explosionThreshold => baseThreshold + (level - 1) * 5;
+  static List<List<HexTile?>> _emptyBoard() => List.generate(
+    rows, (r) => List.generate(cols, (c) => null),
+  );
 
-  bool get isBoardEmpty {
-    return board.every((row) => row.every((tile) => tile == null));
+  bool get isBoardFull =>
+    board.every((row) => row.every((tile) => tile != null));
+
+  bool get isBoardEmpty =>
+    board.every((row) => row.every((tile) => tile == null));
+
+  void _fillRack() {
+    for (int i = 0; i < rackSize; i++) {
+      if (rack[i] == null) {
+        rack[i] = PieceGenerator.generate(board, moveCount, explosionThreshold);
+      }
+    }
   }
 
-  static List<List<HexTile?>> _emptyBoard() =>
-      List.generate(rows, (r) => List.generate(cols, (c) => null));
+  void playPiece(int rackIndex) {
+    rack[rackIndex] = null;
+    rack[rackIndex] = PieceGenerator.generate(board, moveCount, explosionThreshold);
+    moveCount++;
+  }
 
   String toJson() {
     final tiles = <Map<String, dynamic>>[];
@@ -88,9 +96,13 @@ class GameState {
     }
     return jsonEncode({
       'score': score,
-      'level': level,
-      'movesInLevel': movesInLevel,
+      'explosionThreshold': explosionThreshold,
+      'moveCount': moveCount,
       'tiles': tiles,
+      'rack': rack.map((p) => p == null ? null : {
+        'value': p.value,
+        'type': p.type.index,
+      }).toList(),
     });
   }
 
@@ -98,49 +110,49 @@ class GameState {
     final data = jsonDecode(jsonStr) as Map<String, dynamic>;
     final state = GameState(
       score: data['score'] as int,
-      level: data['level'] as int,
-      movesInLevel: data['movesInLevel'] as int,
+      explosionThreshold: data['explosionThreshold'] as int,
+      moveCount: data['moveCount'] as int,
     );
     for (final tileData in (data['tiles'] as List)) {
       final tile = HexTile.fromJson(tileData as Map<String, dynamic>);
       state.board[tile.row][tile.col] = tile;
     }
+    final rackData = data['rack'] as List;
+    for (int i = 0; i < rackData.length; i++) {
+      if (rackData[i] != null) {
+        state.rack[i] = Piece(
+          value: rackData[i]['value'] as int,
+          type: PieceType.values[rackData[i]['type'] as int],
+        );
+      }
+    }
     return state;
   }
-
-  bool get isBoardFull {
-    return board.every((row) => row.every((tile) => tile != null));
-  }
-
-  void generateNextPiece() {
-    currentPiece = PieceGenerator.generate(board, moveCount, explosionThreshold);
-  }
-
   GameStateSnapshot createSnapshot() {
     final boardCopy =
         board.map((row) => row.map((tile) => tile?.copy()).toList()).toList();
     return GameStateSnapshot(
-      board: boardCopy,
       score: score,
-      level: level,
-      currentPiece: currentPiece?.copy(),
+      explosionThreshold: explosionThreshold,
       moveCount: moveCount,
+      board: boardCopy,
+      rack: rack,
     );
   }
 }
 
 class GameStateSnapshot {
-  final List<List<HexTile?>> board;
-  final int score;
-  final int level;
-  final Piece? currentPiece;
-  final int moveCount;
+  int score;
+  int explosionThreshold;
+  int moveCount;
+  List<List<HexTile?>> board;
+  List<Piece?> rack;
 
   GameStateSnapshot({
-    required this.board,
     required this.score,
-    required this.level,
-    this.currentPiece,
+    required this.explosionThreshold,
     required this.moveCount,
+    required this.board,
+    required this.rack,
   });
 }
