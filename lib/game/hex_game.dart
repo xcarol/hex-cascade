@@ -46,8 +46,12 @@ class HexCascadeGame extends FlameGame {
     onRackChanged?.call(state.rack);
   }
 
-  void selectRackPiece(int rackIndex) {
+  void selectRackPiece(int? rackIndex) {
     _selectedRackIndex = rackIndex;
+    if (rackIndex == null) {
+      _updatePlacementMode(null);
+      return;
+    }
     final piece = state.rack[rackIndex];
     if (piece == null) return;
     _updatePlacementMode(piece);

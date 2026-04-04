@@ -165,8 +165,13 @@ class _GameScreenState extends State<GameScreen> {
               rack: _rack,
               selectedIndex: _selectedRackIndex,
               onPieceSelected: (index) {
-                setState(() => _selectedRackIndex = index);
-                _game.selectRackPiece(index);
+                if (_selectedRackIndex == index) {
+                  setState(() => _selectedRackIndex = null);
+                  _game.selectRackPiece(null);
+                } else {
+                  setState(() => _selectedRackIndex = index);
+                  _game.selectRackPiece(index);
+                }
               },
             ),
             const SizedBox(height: 16),
