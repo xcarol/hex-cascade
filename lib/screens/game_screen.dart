@@ -36,7 +36,6 @@ class _GameScreenState extends State<GameScreen> {
       state: widget.state,
       onScoreChanged: (s, t) {
         if (mounted) {
-          debugPrint('Score changed: $s, Threshold: $t');
           setState(() {
             _score = s;
             _threshold = t;
