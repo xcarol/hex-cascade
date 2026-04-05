@@ -52,13 +52,19 @@ class ExplosionEngine {
       _accumulateNeighbours(newBoard, row, col, piece.value);
     } else {
       // Places the piece
-      newBoard[row][col] = HexTile(
-        row: row,
-        col: col,
-        value: newValue,
-      );
-      // Accumulates to neighbors and the score
-      points += _accumulateNeighboursAndScore(newBoard, row, col, piece.value);
+      newBoard[row][col] = HexTile(row: row, col: col, value: newValue);
+      if (piece.isSum) {
+        // adds the piece value to the score
+        points += piece.value;
+      } else {
+        // Accumulates to neighbors and the score
+        points += _accumulateNeighboursAndScore(
+          newBoard,
+          row,
+          col,
+          piece.value,
+        );
+      }
     }
 
     // Chain explosions with multiplier
