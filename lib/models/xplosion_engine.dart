@@ -5,13 +5,11 @@ class ExplosionResult {
   final List<List<HexTile?>> board;
   final int pointsScored;
   final int newThreshold;
-  final HexTile? capturedTile;
 
   const ExplosionResult({
     required this.board,
     required this.pointsScored,
     required this.newThreshold,
-    this.capturedTile,
   });
 }
 
@@ -26,17 +24,14 @@ class ExplosionEngine {
     final newBoard = _copyBoard(board);
     int points = 0;
     int newThreshold = threshold;
-    HexTile? capturedTile;
 
     if (piece.isSubtract) {
-      // Minus piece: removes the piece from the board and returns it to the rack
-      capturedTile = newBoard[row][col];
+      // Minus piece: removes the piece from the board
       newBoard[row][col] = null;
       return ExplosionResult(
         board: newBoard,
         pointsScored: 0,
         newThreshold: newThreshold,
-        capturedTile: capturedTile,
       );
     }
 
@@ -108,11 +103,7 @@ class ExplosionEngine {
       final c = n[1];
       final tile = board[r][c];
       if (tile != null) {
-        board[r][c] = HexTile(
-          row: r,
-          col: col,
-          value: (tile.value) + value,
-        );
+        board[r][c] = HexTile(row: r, col: col, value: (tile.value) + value);
         points += value; // adds to the score
       }
     }
@@ -130,11 +121,7 @@ class ExplosionEngine {
       final c = n[1];
       final tile = board[r][c];
       if (tile != null) {
-        board[r][c] = HexTile(
-          row: r,
-          col: c,
-          value: tile.value + value,
-        );
+        board[r][c] = HexTile(row: r, col: c, value: tile.value + value);
       }
     }
   }

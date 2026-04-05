@@ -84,14 +84,7 @@ class HexCascadeGame extends FlameGame {
     state.score += result.pointsScored;
     state.explosionThreshold = result.newThreshold;
 
-    if (result.capturedTile != null) {
-      state.rack[_selectedRackIndex!] = Piece(
-        value: result.capturedTile!.value,
-        type: PieceType.number,
-      );
-    } else {
-      state.playPiece(_selectedRackIndex!);
-    }
+    state.playPiece(_selectedRackIndex!);
 
     _selectedRackIndex = null;
     onScoreChanged?.call(state.score, state.explosionThreshold);
