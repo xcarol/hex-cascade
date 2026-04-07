@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'game_state.dart';
 import 'piece_generator.dart';
 
@@ -25,6 +27,12 @@ class ExplosionEngine {
     int points = 0;
     int newThreshold = threshold;
 
+    debugPrint('=== ExplosionEngine.process ===');
+    debugPrint('Piece: ${piece.type} value=${piece.value}');
+    debugPrint('Position: ($row,$col)');
+    debugPrint('Threshold: $threshold');
+    debugPrint('Current tile: ${board[row][col]?.value ?? 'empty'}');
+
     if (piece.isSubtract) {
       // Minus piece: removes the piece from the board
       newBoard[row][col] = null;
@@ -39,6 +47,8 @@ class ExplosionEngine {
     final currentTile = newBoard[row][col];
     final currentValue = currentTile?.value ?? 0;
     final newValue = currentValue + piece.value;
+
+    debugPrint('NewValue: $newValue');
 
     // Checks if the new value exceeds the threshold → new threshold
     if (newValue > newThreshold) {
@@ -85,12 +95,19 @@ class ExplosionEngine {
             _accumulateNeighbours(newBoard, r, c, chainMultiplier);
             chainMultiplier++;
             anyExplosion = true;
+            debugPrint(
+              'EXPLOSION at ($r,$c) value=${tile.value} multiplier=$chainMultiplier points=$points',
+            );
             break;
           }
         }
         if (anyExplosion) break;
       }
     }
+
+    debugPrint('Final threshold: $newThreshold');
+    debugPrint('Total points: $points');
+    debugPrint('=== END ===');
 
     return ExplosionResult(
       board: newBoard,
