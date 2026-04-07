@@ -87,7 +87,7 @@ class ExplosionEngine {
           final tile = newBoard[r][c];
           if (tile != null && tile.value >= threshold) {
             // Checks if it generates a new threshold
-            if (tile.value > newThreshold && newThreshold == threshold) {
+            if (tile.value > newThreshold) {
               newThreshold = tile.value;
             }
             points += tile.value * chainMultiplier;
