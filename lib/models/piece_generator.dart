@@ -101,27 +101,27 @@ class PieceGenerator {
     return 4; // full: fewer numbers
   }
 
-  // Value of numbers: large when empty (difficult), small when full (manageable)
   // Logarithmic growth with respect to the threshold
   static int _numberValue(int threshold, double fillRatio) {
-    final maxValue = (log(threshold) / log(10) * 3).round().clamp(
-      1,
-      threshold ~/ 3,
-    );
-    final minValue = (log(threshold) / log(10)).round().clamp(1, maxValue);
+    // Ideal scaling:
+    // T=10 -> pow(10, 0.8) = 6 (clamped 3-4 depending on rule). 
+    // T=24 -> pow(24, 0.8) = 12 
+    // T=100 -> pow(100, 0.75) = 31 (approaching 30, exactly as desired)
+    var maxValue = pow(threshold, 0.75).round().clamp(1, threshold ~/ 2);
+    if (maxValue < 1) maxValue = 1;
 
-    if (fillRatio < 0.3) {
-      // Empty board: large values
+    // We also increase the minimum so you aren't stuck with just 3s
+    final minValue = (maxValue * 0.4).round().clamp(1, maxValue);
+
+    // Remove the excessive punishment of small values when the board is full.
+    // This way you always have options to trigger an explosion.
+    if (fillRatio < 0.4) {
+      // Empty board: tend towards max
       final min = (maxValue * 0.6).round().clamp(minValue, maxValue);
       return min + _random.nextInt((maxValue - min + 1).clamp(1, maxValue));
-    } else if (fillRatio < 0.6) {
-      // Middle board: varied values between minimum and maximum
-      return minValue +
-          _random.nextInt((maxValue - minValue + 1).clamp(1, maxValue));
     } else {
-      // Full board: values close to minimum
-      final max = (maxValue * 0.6).round().clamp(minValue, maxValue);
-      return minValue + _random.nextInt((max - minValue + 1).clamp(1, max));
+      // Middle or full: varied numbers, normal distribution
+      return minValue + _random.nextInt((maxValue - minValue + 1).clamp(1, maxValue));
     }
   }
 
@@ -131,27 +131,41 @@ class PieceGenerator {
     int threshold,
     bool organized,
   ) {
+    // 'the higher the probability of an explosion' -> we have tiles near the threshold
     final nearThreshold = board
         .expand((row) => row)
         .where((t) => t != null && t.value >= threshold * 0.7)
         .length;
 
-    if (!organized) return 1; // disorganized: few sums
-    return (2 + nearThreshold).clamp(2, 5); // organized: more sums
+    // The more pieces near the limit, the more sum pieces we give (maximum 5)
+    return (1 + nearThreshold).clamp(1, 5);
   }
 
   // Value of sums: useful when organized, small when disorganized
   static int _sumValue(int threshold, bool organized) {
-    final max = (log(threshold) / log(10) * 2).round().clamp(1, threshold ~/ 4);
-    if (!organized) return 1; // disorganized: small sums
-    return _random.nextInt(max) + 1;
+    // Sub-linear growth like numbers, but lower values
+    var maxVal = pow(threshold, 0.6).round().clamp(1, threshold ~/ 4);
+    // Avoid full clamping to 1 if maxVal hits 0 in rare conditions
+    if (maxVal < 1) maxVal = 1;
+    
+    if (!organized) {
+      maxVal = (maxVal * 0.5).round().clamp(1, maxVal); // Half maximum when disorganized (not strictly 1)
+    }
+    return _random.nextInt(maxVal) + 1;
   }
 
-  // Subtracts: more when full and disorganized
+  // Subtracts: more when full and organized
   static int _substractCount(double fillRatio, bool organized) {
-    if (fillRatio < 0.7) return 0; // ← goes up from 0.5 to 0.7
-    if (organized) return 1;
-    return 2;
+    if (fillRatio < 0.6) return 0; // Only when starting to get full
+    
+    int count = 1; // Base case when full
+    if (fillRatio > 0.8) count++; // More full -> more subtracts to survive
+    
+    // 'they should tend to appear when the board is fuller and better organized'
+    if (organized) {
+      count++; // Bonus subtracts when organized
+    }
+    return count;
   }
 
   static void reset() {
