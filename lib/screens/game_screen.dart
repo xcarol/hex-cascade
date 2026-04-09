@@ -203,9 +203,9 @@ class _HUD extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -225,7 +225,7 @@ class _HUD extends StatelessWidget {
                 Text(
                   'PUNTUACIÓ',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 10,
                     letterSpacing: 3,
                   ),
@@ -246,7 +246,7 @@ class _HUD extends StatelessWidget {
               Text(
                 'TARGET',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 10,
                   letterSpacing: 3,
                 ),
@@ -310,7 +310,7 @@ class _RackWidget extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.symmetric(horizontal: 8),
               transform: isSelected
-                  ? (Matrix4.identity()..translate(0.0, -8.0))
+                  ? (Matrix4.identity()..translateByDouble(0.0, -8.0, 0.0, 0.0))
                   : Matrix4.identity(),
               child: CustomPaint(
                 size: const Size(64, 64),

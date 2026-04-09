@@ -186,7 +186,7 @@ class _MenuButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: primary
               ? const Color(0xFF64FFDA)
-              : Colors.white.withOpacity(0.08),
+              : Colors.white.withValues(alpha: 0.08),
           foregroundColor: primary ? const Color(0xFF0D1B2A) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
