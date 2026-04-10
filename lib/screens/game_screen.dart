@@ -310,7 +310,7 @@ class _RackWidget extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.symmetric(horizontal: 8),
               transform: isSelected
-                  ? (Matrix4.identity()..translateByDouble(0.0, -8.0, 0.0, 0.0))
+                  ? (Matrix4.identity()..translateByDouble(0.0, -8.0, 0.0, 1.0))
                   : Matrix4.identity(),
               child: CustomPaint(
                 size: const Size(64, 64),
