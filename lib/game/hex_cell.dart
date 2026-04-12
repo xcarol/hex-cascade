@@ -51,7 +51,7 @@ class HexCell extends PositionComponent with TapCallbacks {
       case PlacementMode.none:
         break;
       case PlacementMode.normalOccupied:
-        if (isEmpty) onTapped?.call(row, col);
+        onTapped?.call(row, col);
       case PlacementMode.special:
         onTapped?.call(row, col);
       case PlacementMode.negative:

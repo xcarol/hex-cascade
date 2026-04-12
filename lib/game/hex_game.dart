@@ -66,8 +66,9 @@ class HexCascadeGame extends FlameGame {
     final tile = state.board[row][col];
 
     if (piece.isNumber) {
-      if (tile != null) return;
-      if (!state.isBoardEmpty && !_hasAdjacentTile(row, col)) return;
+      if (tile != null && piece.value + tile.value > state.explosionThreshold) {
+        return;
+      }
     }
     if (piece.isSum && tile == null && !_hasAdjacentTile(row, col)) return;
     if (piece.isSubtract && tile == null) return;
