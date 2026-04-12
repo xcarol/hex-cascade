@@ -83,7 +83,11 @@ class HexCascadeGame extends FlameGame {
 
     state.board = result.board;
     state.score += result.pointsScored;
-    state.explosionThreshold = result.newThreshold;
+    if (state.isBoardEmpty) {
+      state.explosionThreshold = result.newThreshold > state.explosionThreshold
+          ? result.newThreshold
+          : result.newThreshold + 1;
+    }
 
     state.playPiece(_selectedRackIndex!);
 
