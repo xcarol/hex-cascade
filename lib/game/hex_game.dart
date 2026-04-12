@@ -99,8 +99,7 @@ class HexCascadeGame extends FlameGame {
   }
 
   bool _hasAdjacentTile(int row, int col) {
-    return _getNeighbours(row, col)
-        .any((n) => state.board[n[0]][n[1]] != null);
+    return _getNeighbours(row, col).any((n) => state.board[n[0]][n[1]] != null);
   }
 
   List<List<int>> _getNeighbours(int row, int col) {
@@ -180,4 +179,3 @@ class HexCascadeGame extends FlameGame {
     _hexGrid.populateFromState(state.board);
   }
 }
-
