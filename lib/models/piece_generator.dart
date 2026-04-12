@@ -103,15 +103,15 @@ class PieceGenerator {
 
   // Logarithmic growth with respect to the threshold
   static int _numberValue(int threshold, double fillRatio) {
-    // Ideal scaling:
-    // T=10 -> pow(10, 0.8) = 6 (clamped 3-4 depending on rule). 
-    // T=24 -> pow(24, 0.8) = 12 
-    // T=100 -> pow(100, 0.75) = 31 (approaching 30, exactly as desired)
-    var maxValue = pow(threshold, 0.75).round().clamp(1, threshold ~/ 2);
+    // Slower scaling since explosions now wipe the board easily:
+    // T=10 -> pow(10, 0.6) = 4 (clamped to 3)
+    // T=24 -> pow(24, 0.6) = 7
+    // T=100 -> pow(100, 0.6) = 16
+    var maxValue = pow(threshold, 0.6).round().clamp(1, threshold ~/ 3);
     if (maxValue < 1) maxValue = 1;
 
-    // We also increase the minimum so you aren't stuck with just 3s
-    final minValue = (maxValue * 0.4).round().clamp(1, maxValue);
+    // Minimum scaled down accordingly
+    final minValue = (maxValue * 0.3).round().clamp(1, maxValue);
 
     // Remove the excessive punishment of small values when the board is full.
     // This way you always have options to trigger an explosion.
