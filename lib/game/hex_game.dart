@@ -70,7 +70,12 @@ class HexCascadeGame extends FlameGame {
         return;
       }
     }
-    if (piece.isSum && tile == null && !_hasAdjacentTile(row, col)) return;
+    if (piece.isSum &&
+        tile == null &&
+        !_hasAdjacentTile(row, col) &&
+        !state.isBoardEmpty) {
+      return;
+    }
     if (piece.isSubtract && tile == null) return;
 
     final result = ExplosionEngine.process(
