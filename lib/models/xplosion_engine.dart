@@ -92,7 +92,7 @@ class ExplosionEngine {
             }
             points += tile.value * chainMultiplier;
             newBoard[r][c] = null;
-            _addOneToNeighbours(newBoard, r, c);
+            _addValueToNeighbours(newBoard, r, c, 2);
             chainMultiplier++;
             anyExplosion = true;
             debugPrint(
@@ -116,17 +116,18 @@ class ExplosionEngine {
     );
   }
 
-  static void _addOneToNeighbours(
+  static void _addValueToNeighbours(
     List<List<HexTile?>> board,
     int row,
     int col,
+    int value,
   ) {
     for (final n in _getNeighbours(row, col)) {
       final r = n[0];
       final c = n[1];
       final tile = board[r][c];
       if (tile != null) {
-        board[r][c] = HexTile(row: r, col: c, value: tile.value + 1);
+        board[r][c] = HexTile(row: r, col: c, value: tile.value + value);
       }
     }
   }

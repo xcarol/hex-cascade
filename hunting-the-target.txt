@@ -1,0 +1,22 @@
+segueixo fent proves. he fet els següents canvis:
+- ara quan es posa una fitxa no suma a les adjacents
+- una fitxa normal es pot posar en una cel·la ocupada i es sumen, sempre que la suma sigui igual o inferior al threshold
+- quan explota se sumen dos als veïns
+- quan es buida el tauler el nou target és l'últim valor d'explosió o threshold + 1 si no era major de threshold actual
+- només es dóna una fitxa per torn al jugador
+Amb aquests canvis crec que el joc hi guanya. Ara el sentit de les fitxes de sum i substract
+tenen un altre sentit. Ambdues són per ajudar, al de sum permet explotar una fitxa molt pròxima
+al threshold. p.e. threshold = 10 tinc un 9 em surt un 3, l'he de posar en una casella buida, ara bé,
+si em surt un +3 sí que li puc posar i aleshores el nou threshold serà 12. Les fitxes substract, 
+com fins ara, donen espai a un tauler molt ple. El canvi crec que hauria de ser 
+que les fitxes sum sortissin més tard del que ho fan ara, és a dir, amb el tauler més ple.
+D'altre banda, el joc ha de donar algunes fitxes més grans a l'inici del joc per presionar al jugador
+a organitzar el tauler i conforme es va emplenant disminuir la qüantitat de fitxes grans que dona.
+Conforme la partida abança aquesta variació es fa més estreta, cosa que tensa el joc.
+Com si diguessim que quan el tauler és més buid una progressió de fitxes podria ser:
+5 3 7 2 2 6 5 4 5 1 8 i quan el tauler és més ple: 3 5 3 1 6 1 2 8 2 3 1. Conforme evoluciona el joc
+la distància entre la més petita 1 i la més gran 9 (en el cas anterior), va disminuint i, 
+p.e. quan el target és 25 la més petita podria ser 10 i la més gran 17, o una altre estratègia pot ser,
+fer créixer aquesta diferència, així, amb el target 25, potser la més petita és 10 i la més gran 24.
+No ho sé, són idees que s'han de provar.
+
