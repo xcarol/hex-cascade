@@ -67,13 +67,7 @@ class ExplosionEngine {
         // adds the piece value to the score
         points += piece.value;
       } else {
-        // Accumulates to neighbors and the score
-        points += _accumulateNeighboursAndScore(
-          newBoard,
-          row,
-          col,
-          piece.value,
-        );
+        points += piece.value;
       }
     }
 
