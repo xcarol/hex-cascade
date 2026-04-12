@@ -64,7 +64,7 @@ class PieceGenerator {
     );
 
     // Sums: more frequent when organized and there are tiles close to the threshold
-    final sumCount = _sumCount(board, threshold, organized);
+    final sumCount = _sumCount(board, threshold, organized, fillRatio);
     final sums = List.generate(
       sumCount,
       (_) => Piece(value: _sumValue(threshold, organized), type: PieceType.sum),
@@ -101,44 +101,43 @@ class PieceGenerator {
     return 4; // full: fewer numbers
   }
 
-  // Logarithmic growth with respect to the threshold
   static int _numberValue(int threshold, double fillRatio) {
-    // Slower scaling since explosions now wipe the board easily:
-    // T=10 -> pow(10, 0.6) = 4 (clamped to 3)
-    // T=24 -> pow(24, 0.6) = 7
-    // T=100 -> pow(100, 0.6) = 16
-    var maxValue = pow(threshold, 0.6).round().clamp(1, threshold ~/ 3);
-    if (maxValue < 1) maxValue = 1;
-
-    // Minimum scaled down accordingly
-    final minValue = (maxValue * 0.3).round().clamp(1, maxValue);
-
-    // Remove the excessive punishment of small values when the board is full.
-    // This way you always have options to trigger an explosion.
-    if (fillRatio < 0.4) {
-      // Empty board: tend towards max
-      final min = (maxValue * 0.6).round().clamp(minValue, maxValue);
-      return min + _random.nextInt((maxValue - min + 1).clamp(1, maxValue));
+    if (fillRatio < 0.3) {
+      // Empty board: force larger numbers to pressure the player to organize
+      int maxVal = (threshold * 0.7).round().clamp(1, threshold - 1);
+      int minVal = (threshold * 0.4).round().clamp(1, maxVal);
+      return minVal + _random.nextInt((maxVal - minVal + 1));
+    } else if (fillRatio > 0.6) {
+      // Full board: allow smaller numbers to fit them and avoid blocking
+      int maxVal = (threshold * 0.35).round().clamp(1, threshold ~/ 2);
+      if (maxVal < 1) maxVal = 1;
+      return 1 + _random.nextInt(maxVal); // Minimum 1 logic is implicit
     } else {
-      // Middle or full: varied numbers, normal distribution
-      return minValue + _random.nextInt((maxValue - minValue + 1).clamp(1, maxValue));
+      // Middle or intermediate filling
+      int maxVal = (threshold * 0.5).round().clamp(1, threshold - 2);
+      int minVal = (threshold * 0.15).round().clamp(1, maxVal);
+      return minVal + _random.nextInt((maxVal - minVal + 1));
     }
   }
 
-  // Sums: more when organized and there are tiles close to the threshold
+  // Sums: appear later when the board is fuller, and scale with tiles near the limit
   static int _sumCount(
     List<List<HexTile?>> board,
     int threshold,
     bool organized,
+    double fillRatio,
   ) {
+    if (fillRatio < 0.35) return 0; // Delay appearance of sum pieces
+
     // 'the higher the probability of an explosion' -> we have tiles near the threshold
     final nearThreshold = board
         .expand((row) => row)
         .where((t) => t != null && t.value >= threshold * 0.7)
         .length;
 
-    // The more pieces near the limit, the more sum pieces we give (maximum 5)
-    return (1 + nearThreshold).clamp(1, 5);
+    int baseCount = (fillRatio >= 0.7) ? 2 : 1;
+    // The more pieces near the limit and fuller the board, the more sum pieces we give
+    return (baseCount + nearThreshold).clamp(1, 5);
   }
 
   // Value of sums: useful when organized, small when disorganized
