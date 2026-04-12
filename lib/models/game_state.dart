@@ -49,7 +49,7 @@ class GameState {
 
   static const int rows = 5;
   static const int cols = 5;
-  static const int rackSize = 3;
+  static const int rackSize = 1;
 
   GameState({
     this.score = 0,
