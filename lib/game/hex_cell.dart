@@ -3,6 +3,7 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
+import 'hex_game.dart';
 
 enum PlacementMode { none, normalOccupied, special, negative }
 
@@ -86,7 +87,24 @@ class HexCell extends PositionComponent with TapCallbacks {
     final center = Offset(size.x / 2, size.y / 2);
     final r = hexSize * _scale * 0.9;
 
-    final fillPaint = Paint()..color = isEmpty ? _emptyColor : _filledColor;
+    Color currentFilledColor = _filledColor;
+    Color textColor = Colors.white;
+
+    if (!isEmpty && value != null) {
+      int threshold = 10;
+      try {
+        threshold = (findGame() as HexCascadeGame).state.explosionThreshold;
+      } catch (_) {}
+
+      final ratio = (value! / threshold).clamp(0.0, 1.0);
+      currentFilledColor = Color.lerp(Colors.white, const Color(0xFF1565C0), ratio) ?? _filledColor;
+      
+      if (ratio < 0.4) {
+        textColor = const Color(0xFF0D1B2A); // Dark text for very light background
+      }
+    }
+
+    final fillPaint = Paint()..color = isEmpty ? _emptyColor : currentFilledColor;
     final borderPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
@@ -101,8 +119,8 @@ class HexCell extends PositionComponent with TapCallbacks {
       final textPainter = TextPainter(
         text: TextSpan(
           text: text,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
